@@ -38,6 +38,4 @@ python3 stock_scraper_api.py
 Check Public IP
 curl ifconfig.me
 
-This document can be saved as your quick-reference guide for restarting your Flask server after logging out of AWS EC2.
 
-End of Document
