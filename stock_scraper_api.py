@@ -1,5 +1,3 @@
-import requests
-from bs4 import BeautifulSoup
 import yfinance as yf
 import matplotlib.pyplot as plt
 import io
@@ -8,32 +6,47 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Function to fetch live price from NSE
-def fetch_live_price(symbol):
-    url = f"https://www.nseindia.com/get-quotes/equity?symbol={symbol}"
+@app.route('/')
+def home():
+    return "Stock Scraper API is Running! Try accessing /home-stocks or /stock?symbol=RELIANCE"
+
+# List of popular stocks to show on home screen
+POPULAR_STOCKS = ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK"]
+
+def get_stock_info(symbol):
+    stock = yf.Ticker(symbol + ".NS")
     
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://www.nseindia.com/"
+    # Fetch latest price
+    history = stock.history(period="1d")
+    latest_price = history['Close'].iloc[-1]
+    
+    # Calculate daily change
+    previous_close = history['Close'].iloc[-2] if len(history) > 1 else latest_price
+    change = latest_price - previous_close
+    change_percent = (change / previous_close) * 100 if previous_close else 0
+    
+    return {
+        "symbol": symbol,
+        "price": f"₹{latest_price:.2f}",
+        "change": f"{change:+.2f} ({change_percent:+.2f}%)"
     }
+
+@app.route('/home-stocks', methods=['GET'])
+def home_stocks():
+    stocks_data = []
     
-    session = requests.Session()
-    session.get("https://www.nseindia.com", headers=headers)  # Fetch cookies
-    response = session.get(url, headers=headers)
+    for symbol in POPULAR_STOCKS:
+        try:
+            stock_info = get_stock_info(symbol)
+            stocks_data.append(stock_info)
+        except Exception as e:
+            stocks_data.append({
+                "symbol": symbol,
+                "error": str(e)
+            })
     
-    if response.status_code != 200:
-        raise Exception(f"Failed to fetch data from NSE. Status code: {response.status_code}")
+    return jsonify(stocks_data)
 
-    soup = BeautifulSoup(response.text, "html.parser")
-    price_element = soup.find('span', {'id': 'quoteLtp'})
-
-    if not price_element:
-        raise Exception(f"Could not find price element for {symbol}. NSE page structure may have changed.")
-
-    return price_element.text.strip()
-
-# Function to fetch historical data and generate graphs
 def fetch_and_plot_graphs(symbol):
     stock = yf.Ticker(symbol + ".NS")
 
@@ -60,7 +73,6 @@ def fetch_and_plot_graphs(symbol):
         plt.legend()
         plt.grid(True)
 
-        # Convert plot to base64 string
         img_io = io.BytesIO()
         plt.savefig(img_io, format='png')
         plt.close()
@@ -71,21 +83,21 @@ def fetch_and_plot_graphs(symbol):
 
     return graphs
 
-# Flask API Endpoint
 @app.route('/stock', methods=['GET'])
 def get_stock_data():
     symbol = request.args.get('symbol', '').upper()
-    
+
     if not symbol:
         return jsonify({'error': 'Symbol parameter is required'}), 400
 
     try:
-        live_price = fetch_live_price(symbol)
+        stock_info = get_stock_info(symbol)
         graphs = fetch_and_plot_graphs(symbol)
 
         return jsonify({
             'symbol': symbol,
-            'live_price': live_price,
+            'price': stock_info['price'],
+            'change': stock_info['change'],
             'graphs': graphs
         })
 
@@ -93,4 +105,4 @@ def get_stock_data():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=5000)
