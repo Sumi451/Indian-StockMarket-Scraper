@@ -38,4 +38,14 @@ python3 stock_scraper_api.py
 Check Public IP
 curl ifconfig.me
 
+💻 How to Test
+For Home Stocks (Top 5)
+
+    Run: http://<your-ec2-ip>:5000/home-stocks
+    
+
+For Specific Stock with Graphs
+
+    Run: http://<your-ec2-ip>:5000/stock?symbol=RELIANCE
+
 
