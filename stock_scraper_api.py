@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 import io
 import base64
 from flask import Flask, request, jsonify
+from flask_cors import CORS  # <-- Add this line
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins (for development)
 
 @app.route('/')
 def home():
@@ -16,11 +18,9 @@ POPULAR_STOCKS = ["RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK"]
 def get_stock_info(symbol):
     stock = yf.Ticker(symbol + ".NS")
     
-    # Fetch latest price
     history = stock.history(period="1d")
     latest_price = history['Close'].iloc[-1]
     
-    # Calculate daily change
     previous_close = history['Close'].iloc[-2] if len(history) > 1 else latest_price
     change = latest_price - previous_close
     change_percent = (change / previous_close) * 100 if previous_close else 0
