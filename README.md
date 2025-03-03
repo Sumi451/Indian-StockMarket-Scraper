@@ -48,4 +48,9 @@ For Specific Stock with Graphs
 
     Run: http://<your-ec2-ip>:5000/stock?symbol=RELIANCE
 
+1️⃣ Install Flask-CORS (if not installed)
+
+On your EC2 instance (via SSH):
+
+pip install flask-cors
 
