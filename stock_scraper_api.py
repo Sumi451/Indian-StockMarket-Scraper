@@ -104,5 +104,29 @@ def get_stock_data():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/news', methods=['GET'])
+def get_finance_news():
+    try:
+        # You can change this to another stock with good news coverage like TSLA, MSFT, etc.
+        ticker = yf.Ticker("AAPL")
+        news = ticker.news
+
+        # Limit to 8 articles and only return necessary fields
+        cleaned_news = []
+        for item in news[:8]:
+            cleaned_news.append({
+                "title": item.get("title"),
+                "publisher": item.get("publisher"),
+                "link": item.get("link"),
+                "summary": item.get("summary"),
+                "providerPublishTime": item.get("providerPublishTime")
+            })
+
+        return jsonify(cleaned_news)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
